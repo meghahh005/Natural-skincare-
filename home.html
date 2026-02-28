@@ -148,12 +148,23 @@
 <script type="module">
   import Groq from "https://esm.run/groq-sdk";
 
-  // Load API key from environment - for local development, add GROQ_API_KEY to .env file
-  const GROQ_API_KEY = import.meta.env?.VITE_GROQ_API_KEY || process.env.GROQ_API_KEY || "";
+  // Get API key from backend securely
+  let GROQ_API_KEY = "";
   
-  if (!GROQ_API_KEY) {
-    console.warn("Warning: GROQ_API_KEY is not set. Set it in your .env file.");
+  async function loadApiKey() {
+    try {
+      const response = await fetch('/api/config');
+      const data = await response.json();
+      GROQ_API_KEY = data.apiKey || "";
+      if (!GROQ_API_KEY) {
+        console.warn("Warning: GROQ_API_KEY is not set. Set it in your .env file.");
+      }
+    } catch (error) {
+      console.error("Failed to load API configuration", error);
+    }
   }
+  
+  await loadApiKey();
 
   const groq = new Groq({ 
     apiKey: GROQ_API_KEY,

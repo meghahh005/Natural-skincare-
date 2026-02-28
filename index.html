@@ -141,9 +141,15 @@
   function registerUser() {
     const name = document.getElementById("regName").value.trim();
     const email = document.getElementById("regEmail").value.trim();
+    const password = document.getElementById("regPassword").value.trim();
 
-    if(!name || !email){
+    if(!name || !email || !password){
       alert("Please fill all fields!");
+      return;
+    }
+
+    if(password.length < 6){
+      alert("Password must be at least 6 characters!");
       return;
     }
 
@@ -155,7 +161,7 @@
     }
 
     // Add new user to array
-    users.push([name, email]);
+    users.push([name, email, password]);
     localStorage.setItem("users", JSON.stringify(users)); // Save array to localStorage
 
     alert("Registration successful! Please login.");
@@ -164,30 +170,33 @@
     // Clear input fields
     document.getElementById("regName").value = "";
     document.getElementById("regEmail").value = "";
+    document.getElementById("regPassword").value = "";
   }
 
   // Login User
   function loginUser() {
     const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
 
-    if(!email){
-      alert("Please enter your email!");
+    if(!email || !password){
+      alert("Please enter your email and password!");
       return;
     }
 
-    // Check if email exists in array
-    const user = users.find(u => u[1] === email);
+    // Check if email and password match
+    const user = users.find(u => u[1] === email && u[2] === password);
 
     if(user){
       alert(`Welcome back, ${user[0]}!`);
-      // Redirect to index.html
+      // Redirect to home.html
       window.location.href = "home.html";
     } else {
-      alert("Email not found!");
+      alert("Invalid email or password!");
     }
 
-    // Clear input field
+    // Clear input fields
     document.getElementById("loginEmail").value = "";
+    document.getElementById("loginPassword").value = "";
   }
 </script>
 </body>
