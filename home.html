@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Natural Skincare AI</title>
+  <style>
+    /* Page background: light green */
+    body { 
+      font-family: 'Segoe UI', sans-serif; 
+      background: #e6f5e6;  /* soft light green */
+      display: flex; 
+      justify-content: center; 
+      padding: 20px; 
+    }
+
+    /* White card */
+    .card { 
+      max-width: 500px; 
+      width: 100%; 
+      background: #ffffff; /* white card */
+      padding: 30px; 
+      border-radius: 16px; 
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1); 
+      position: relative; 
+    }
+
+    h1 { color: #4caf50; text-align: center; margin-bottom: 5px; }
+    p.subtitle { text-align: center; color: #666; font-size: 0.9em; margin-bottom: 25px; }
+    label { display: block; margin-top: 15px; font-weight: 600; color: #333; }
+    select, input, textarea { 
+      width: 100%; 
+      padding: 12px; 
+      margin-top: 5px; 
+      border: 1px solid #cce6cc; 
+      border-radius: 8px; 
+      box-sizing: border-box; 
+      font-size: 14px; 
+      background: #f9fff9; 
+    }
+    button { 
+      width: 100%; 
+      background: #4caf50; 
+      color: white; 
+      border: none; 
+      padding: 15px; 
+      margin-top: 25px; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-size: 16px; 
+      font-weight: bold; 
+      transition: 0.2s; 
+    }
+    button:hover { background: #45a049; }
+    button:disabled { background: #a6d8a6; cursor: not-allowed; }
+
+    #result { 
+      margin-top: 25px; 
+      padding: 20px; 
+      background: #f0fff0; 
+      border-left: 5px solid #4caf50; 
+      border-radius: 4px; 
+      white-space: pre-wrap; 
+      display: none; 
+      line-height: 1.6; 
+      color: #222; 
+    }
+
+    .loader { 
+      border: 3px solid #f3f3f3; 
+      border-top: 3px solid #4caf50; 
+      border-radius: 50%; 
+      width: 18px; 
+      height: 18px; 
+      animation: spin 0.8s linear infinite; 
+      display: inline-block; 
+      vertical-align: middle; 
+      margin-right: 10px; 
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* Cross logout container */
+    .logout-container {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      text-align: center;
+    }
+    #logoutBtn {
+      background: transparent;
+      color: #4caf50;
+      border: none;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
+      transition: 0.2s;
+      display: block;
+    }
+    #logoutBtn:hover {
+      color: #388e3c;
+    }
+    .logout-text {
+      font-size: 12px;
+      color: #4caf50;
+      margin-top: 2px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .logout-text:hover {
+      color: #388e3c;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <!-- Small cross + text logout -->
+  <div class="logout-container">
+    <button id="logoutBtn">&times;</button>
+    <div class="logout-text">Logout</div>
+  </div>
+
+  <h1>Skincare</h1>
+  <p class="subtitle">Ultra-fast natural remedies</p>
+  
+  <label>Skin Type</label>
+  <select id="skinType">
+    <option value="Normal">Normal</option>
+    <option value="Oily">Oily</option>
+    <option value="Dry">Dry</option>
+    <option value="Combination">Combination</option>
+    <option value="Sensitive">Sensitive</option>
+  </select>
+
+  <label>Main Concern</label>
+  <input type="text" id="skinConcern" placeholder="e.g. hormonal acne, sun damage">
+
+  <label>Notes</label>
+  <textarea id="notes" rows="3" placeholder="List any allergies or preferred ingredients..."></textarea>
+
+  <button id="submitBtn">Generate Fast Recommendations</button>
+
+  <div id="result"></div>
+</div>
+
+<script type="module">
+  import Groq from "https://esm.run/groq-sdk";
+
+  // Load API key from environment - for local development, add GROQ_API_KEY to .env file
+  const GROQ_API_KEY = import.meta.env?.VITE_GROQ_API_KEY || process.env.GROQ_API_KEY || "";
+  
+  if (!GROQ_API_KEY) {
+    console.warn("Warning: GROQ_API_KEY is not set. Set it in your .env file.");
+  }
+
+  const groq = new Groq({ 
+    apiKey: GROQ_API_KEY,
+    dangerouslyAllowBrowser: true
+  });
+
+  async function getRecommendation() {
+    const skinType = document.getElementById('skinType').value;
+    const skinConcern = document.getElementById('skinConcern').value;
+    const notes = document.getElementById('notes').value;
+    const btn = document.getElementById('submitBtn');
+    const resultDiv = document.getElementById('result');
+
+    if (!skinConcern) return alert("Please enter your skin concern.");
+
+    btn.disabled = true;
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<div class="loader"></div> Groq Llama-3 is analyzing...';
+
+    try {
+      const chatCompletion = await groq.chat.completions.create({
+        messages: [
+          { role: "system", content: "You are a natural skincare expert. Be concise and practical." },
+          { role: "user", content: `Skin Type: ${skinType}\nConcern: ${skinConcern}\nNotes: ${notes}\n\nProvide 3 natural skincare remedies or routines.` }
+        ],
+        model: "llama-3.3-70b-versatile",
+        temperature: 1
+      });
+
+      resultDiv.textContent = chatCompletion.choices[0].message.content;
+    } catch (error) {
+      resultDiv.textContent = "❌ Error: " + error.message;
+      console.error(error);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById('submitBtn').addEventListener('click', getRecommendation);
+
+  // Logout click handler (both cross and text)
+  const logoutElements = [document.getElementById('logoutBtn'), document.querySelector('.logout-text')];
+  logoutElements.forEach(el => {
+    el.addEventListener('click', () => {
+      window.location.href = "index.html";
+    });
+  });
+</script>
+
+</body>
+</html>
